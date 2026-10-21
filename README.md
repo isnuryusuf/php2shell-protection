@@ -22,11 +22,13 @@ Upgrade to a vendor-patched build, including these upstream fixed releases:
 
 PHP 8.1 and earlier are out of upstream support. Some Linux distributions and LTS vendors may offer backported fixes. The PHP security team also supplied minimal source backports for PHP **7.4, 8.0, and 8.1**. **PHP 5.2 has no upstream patch listed**; move to a maintained runtime or seek an appropriate vendor-supported migration plan. Do not assume that an older runtime is safe because a particular newer feature is absent.
 
-### Emerging research: reported double-free on PHP 8.5.12 (21 October 2026)
+### Separate PHP memory-safety finding (21 October 2026)
 
-**Unverified report — not an official PHP advisory or a confirmed patch bypass.** On 21 October 2026, a security researcher publicly reported that a local AddressSanitizer-instrumented PHP **8.5.12** build still produced an **attempting double-free** error when running a proof-of-concept test. The shared screenshot shows an allocator diagnostic and a stack trace involving PHP memory management; it does **not** by itself demonstrate a successful remote exploit, code execution, or that either published CVE remains exploitable in the patched release. The exact cause, reproducibility, build configuration, and relationship to CVE-2026-109618 / CVE-2026-109619 have not been independently established here.
+**Separate, unverified research report — not evidence that the php2shell patches failed.** On 21 October 2026, a security researcher publicly reported an AddressSanitizer-detected **double-free** that reportedly reproduces on PHP **8.5.12**. The researcher subsequently clarified that this concerns **a different vulnerability they discovered**, **not** CVE-2026-109618 or CVE-2026-109619, which were addressed by the October 21 PHP security releases.
 
-**Operational guidance:** Continue to deploy the official security releases (including PHP 8.5.12) rather than delaying patches based on a social-media report. Monitor PHP's official security announcements for confirmation or follow-up fixes. Keep defense-in-depth controls where compatible, but do not claim this toolkit addresses any newly reported issue. A local sanitizer crash is a reason for further investigation, **not proof of a working remote-code-execution exploit**.
+The shared output shows a local PHP CLI execution under AddressSanitizer. It does **not** establish that the finding is remotely reachable, that remote code execution is possible, that a working zero-day exploit is circulating, or that the php2shell fixes are incomplete. The affected configurations, remediation status, and any future CVE assignment remain unconfirmed here.
+
+**Operational guidance:** Continue deploying PHP's official security updates. Monitor official PHP security announcements for further information on this **separate finding**. The request-filtering and size-limit mitigations in this repository **have not been validated against it** and must not be presented as protection from it.
 
 No proof-of-concept code, exploit archive, or exploit link is included in this project.
 
