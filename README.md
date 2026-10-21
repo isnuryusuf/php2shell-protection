@@ -22,15 +22,19 @@ Upgrade to a vendor-patched build, including these upstream fixed releases:
 
 PHP 8.1 and earlier are out of upstream support. Some Linux distributions and LTS vendors may offer backported fixes. The PHP security team also supplied minimal source backports for PHP **7.4, 8.0, and 8.1**. **PHP 5.2 has no upstream patch listed**; move to a maintained runtime or seek an appropriate vendor-supported migration plan. Do not assume that an older runtime is safe because a particular newer feature is absent.
 
-### Separate PHP memory-safety finding (21 October 2026)
+### Separate PHP memory-safety reports and verified SimpleXML regression (21 October 2026)
 
-**Separate, unverified research report — not evidence that the php2shell patches failed.** On 21 October 2026, a security researcher publicly reported an AddressSanitizer-detected **double-free** that reportedly reproduces on PHP **8.5.12**. The researcher subsequently clarified that this concerns **a different vulnerability they discovered**, **not** CVE-2026-109618 or CVE-2026-109619, which were addressed by the October 21 PHP security releases.
+**These reports are distinct from the php2shell CVEs.** They do not demonstrate that the security fixes for CVE-2026-109618 or CVE-2026-109619 are ineffective.
 
-The shared output shows a local PHP CLI execution under AddressSanitizer. It does **not** establish that the finding is remotely reachable, that remote code execution is possible, that a working zero-day exploit is circulating, or that the php2shell fixes are incomplete. The affected configurations, remediation status, and any future CVE assignment remain unconfirmed here.
+**Earlier research report (relationship unconfirmed):** A researcher publicly reported an AddressSanitizer-detected double-free in PHP 8.5.12 and clarified that their finding was **not** one of the php2shell vulnerabilities patched on 21 October. The publicly shared crash output alone does not establish remote reachability, code execution, or a CVE assignment. We cannot establish from the available information whether this report describes the same underlying defect as the GitHub issue below.
 
-**Operational guidance:** Continue deploying PHP's official security updates. Monitor official PHP security announcements for further information on this **separate finding**. The request-filtering and size-limit mitigations in this repository **have not been validated against it** and must not be presented as protection from it.
+**Maintainer-verified PHP regression — [php/php-src issue #24488](https://github.com/php/php-src/issues/24488):** A separately documented bug report describes a reproducible double-free involving `SimpleXMLElement` property tables and PHP garbage collection in **PHP 8.4.27 and 8.5.12**. The PHP project marked the issue **Status: Verified**. The reporter reproduced `zend_mm_heap corrupted` and, with the system allocator, a double-free; they traced the regression to a garbage-collection change associated with GH-24050. They also reported failures in a Laravel/Pest test suite. This establishes a real stability and memory-safety concern in these versions, **not** remote exploitability or RCE.
 
-No proof-of-concept code, exploit archive, or exploit link is included in this project.
+A proposed fix is tracked in **[php/php-src pull request #24494](https://github.com/php/php-src/pull/24494)**. Its existence does not mean a fix has been merged or shipped; consult the linked issue, pull request, and PHP release notes for current status.
+
+**Operational guidance:** Continue deploying the official php2shell security updates; do not revert to an unpatched release solely because of this separate regression. If your application uses SimpleXML and experiences crashes, track issue #24488 and the corresponding PHP maintenance releases. The Apache multipart filters and request-body limits in this repository **have not been validated as mitigations** for the SimpleXML issue or the earlier research report.
+
+This repository does not include or link to private exploit material. The public PHP bug tracker and proposed fix are linked for transparent, verifiable context.
 
 ### Temporary measures recommended by the PHP security team
 
