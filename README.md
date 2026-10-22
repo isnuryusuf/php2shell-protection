@@ -135,7 +135,9 @@ For defense in depth, also configure PHP's effective `post_max_size` to reflect 
 
 ### Why this project blocks multipart POST requests
 
-The project was originally assembled before official details were published, informed by privately reviewed research about session upload-progress behavior. **The official advisory now confirms session upload progress as one CVE-2026-109619 attack path, but it does not confirm that multipart blocking prevents all exploitation of that CVE or CVE-2026-109618.** The private research and exploit material are intentionally not linked, reproduced, or distributed.
+**Origins of this project:** This toolkit was developed before the official PHP security advisories were published, based on preliminary information circulating in the security community and early access to zero-day proof-of-concept material that our team obtained and reviewed. That material helped inform our initial mitigation approach. No private exploit code, payloads, or reproduction instructions are included or linked.
+
+**The official advisory now confirms session upload progress as one CVE-2026-109619 attack path, but it does not confirm that multipart blocking prevents all exploitation of that CVE or CVE-2026-109618.** The toolkit is a temporary defense-in-depth measure, not a substitute for patched PHP releases.
 
 PHP can parse multipart form data **before the application script executes**; an application need not explicitly implement a file-upload page for the parser to be reachable. This toolkit checks whether Apache rejects a standard multipart POST at the web-server layer. The included rule deliberately blocks **all** matching multipart POSTs, including forms with no attached file. Do not enable it globally where legitimate multipart forms or uploads are needed.
 
