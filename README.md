@@ -36,6 +36,18 @@ A proposed fix is tracked in **[php/php-src pull request #24494](https://github.
 
 This repository does not include or link to private exploit material. The public PHP bug tracker and proposed fix are linked for transparent, verifiable context.
 
+### Public research update: configuration-dependent RCE demonstration on PHP 8.5.12 (22 October 2026)
+
+A publicly released proof of concept reports command execution on **PHP 8.5.12** using an **Apache 2.4 / `mod_php` laboratory configuration**. The reported mechanism is a **session-handling logic and application-object interaction**, not the memory-corruption mechanisms addressed by **CVE-2026-109618** and **CVE-2026-109619**. A demonstration showing command output in a controlled environment is noteworthy, but does **not** establish unauthenticated RCE against a default PHP installation.
+
+**Important prerequisites disclosed by the research:** The newer demonstration depends on **different session serialization formats being used when session data is written and read**, a suitable **application-defined object with security-sensitive cleanup behavior**, and **session upload-progress processing**. The published laboratory setup uses non-default upload-progress cleanup behavior. The research also discusses a **separate, older session-poisoning chain requiring an application-level local file inclusion vulnerability**. These should not be conflated with each other or with the two October 21 CVEs.
+
+**What remains unconfirmed:** Independent validation by PHP maintainers, general exploitability on ordinary deployments, applicability to CGI/FastCGI or PHP-FPM, and whether the newer demonstration merits a separate PHP-core CVE. The published report is not proof that the October 21 security fixes were bypassed. It also should not be conflated with the separately tracked SimpleXML garbage-collection regression.
+
+**Defensive implications:** Where uploads are unnecessary, the Apache multipart-blocking rule in this project may interrupt the upload-progress stage. Disabling `session.upload_progress.enabled` at the PHP configuration level is a more targeted defense against chains that require that feature. Review applications for inconsistent session serialization settings, unsafe deserialization behavior, risky destructor side effects, and local file inclusion. **These project mitigations have not been independently validated against the newly published demonstration**, and request-body size limits alone are not a proven defense against it.
+
+**Responsible-publication choice:** Although proof-of-concept material is now public, this README intentionally omits the researcher's identity, exploit repository links, payloads, commands, and attack paths. The aim is to provide actionable defensive context without facilitating reproduction.
+
 ### Temporary measures recommended by the PHP security team
 
 These are **risk reductions, not complete fixes**. Confirm settings in the active web SAPI and restart affected workers as appropriate.
@@ -189,6 +201,20 @@ An empty string or `0` from an available boolean directive indicates disabled; `
 
 Disabling session upload progress on newer PHP versions directly removes that optional feature, but **should not be presented as a verified fix for both October 2026 CVEs** without vendor confirmation. Do not infer that the feature's absence on PHP 5.2 makes that runtime safe.
 
+### Optional PHP session hardening example
+
+The package includes [`php-session-hardening.ini.example`](php-session-hardening.ini.example) as a **separate, opt-in configuration example**. It is **not installed automatically**, and the HTTP/HTTPS `.htaccess` files retain their existing multipart-blocking and request-size rules. The example is intended for administrators who can change the effective PHP configuration; **Apache `.htaccess` does not generally configure PHP directives under CGI/FastCGI or PHP-FPM**.
+
+The example covers:
+
+- **`session.upload_progress.enabled = Off`** — the most directly relevant setting for the session upload-progress prerequisite in the published demonstrations. Configure it before PHP parses requests, and verify it in the web SAPI after restarting/reloading workers. This directive is unavailable in PHP 5.2.
+- **`session.serialize_handler = php`** — an *example* of a single consistent format, **not** a blanket security fix. All applications/workers sharing session storage must agree on the format. Changing it without planning may invalidate or misinterpret existing sessions; coordinate migrations or session resets. Do not assume a serializer switch removes unsafe application-defined object behavior.
+- **`session.use_strict_mode = 1`** — general protection against adoption of uninitialized session IDs, provided the active session save handler supports ID validation. Not a demonstrated fix for the published RCE chain.
+- **`session.cookie_httponly = 1`** — general cookie hardening; does not prevent server-side session poisoning or file inclusion.
+- **`session.cookie_secure = 1`** — supplied **commented out**; enable only when session cookies are used exclusively over HTTPS and deployment/proxy settings are correct.
+
+**Deployment:** Copy only appropriate settings into the active server-level `php.ini` or equivalent PHP-FPM pool configuration, reload/restart affected PHP workers, and check the effective values through the **web SAPI**. Verify login/logout, session persistence, all applications sharing session files, and existing session compatibility. PHP 5.2 deployments cannot use the upload-progress or strict-mode directives as substitutes for patching or migration. These settings do not remediate application LFI, dangerous deserialization callbacks, or the full set of October 2026 vulnerabilities.
+
 ### Interpretation and response priorities
 
 A test result of ordinary POST **200 / PHP executed** and multipart POST **403 / PHP not executed** demonstrates the intended request-filtering behavior for the tested route. It does **not** prove every route is covered, that the rejection came from this exact rewrite rule, or that either CVE is mitigated. Other HTTP methods, alternate vhosts, upstream routing, and other vulnerabilities remain outside the test's scope.
@@ -201,6 +227,7 @@ A test result of ordinary POST **200 / PHP executed** and multipart POST **403 /
 - `https/`: `checkblock.php` targets `https://`.
 - Each folder includes `target.php` and an example `.htaccess` rule with an 8 MiB Apache request-body limit.
 - `testblock.php`: standalone, browser-based multipart POST test (no cURL required).
+- `php-session-hardening.ini.example`: optional PHP configuration guidance; not automatically applied.
 
 ## Requirements
 
